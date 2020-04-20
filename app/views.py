@@ -4,9 +4,10 @@ Jinja2 Documentation:    http://jinja.pocoo.org/2/documentation/
 Werkzeug Documentation:  http://werkzeug.pocoo.org/documentation/
 This file creates your application.
 """
-
-from app import app
+from app import app, mail
 from flask import render_template, request, redirect, url_for, flash
+from app.forms import ContactForm
+from flask_mail import Message
 
 
 ###
@@ -23,6 +24,30 @@ def home():
 def about():
     """Render the website's about page."""
     return render_template('about.html', name="Mary Jane")
+
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact(): 
+    form = ContactForm()
+    if request.method =='POST':
+        if form.validate_on_submit():
+            name = form.name.data
+            email = form.email.data
+            subject = form.subject.data
+            message = form.message.data
+
+            flash('Thank you for contacting our services, we will get back to you shortly')
+            msg = Message(subject, sender=(name,email), recipients=['smtp.mailtrap.io'])
+            msg.body = message
+            mail.send(msg)
+            return redirect(url_for('home'))
+        else:
+            flash("Oops!, please ensure you've filled out all the fields")
+    return render_template('contact.html', title="contact", form=form)
+
+
+
+
 
 
 ###
@@ -63,7 +88,7 @@ def add_header(response):
 def page_not_found(error):
     """Custom 404 page."""
     return render_template('404.html'), 404
-
-
+	
+	
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port="8080")
